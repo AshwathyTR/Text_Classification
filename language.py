@@ -75,8 +75,7 @@ class PreProcessor:
         #clean_sent=re.sub("  "," ",clean_sent)
         return(clean_sent)
         
-    def remove_slang(text):
-        
+       
         
     def get_preprocessed_data(self):
           data=self.parser.indexed_by_class()
