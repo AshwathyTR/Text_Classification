@@ -28,6 +28,7 @@ import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer,TfidfVectorizer
 
 ''' insert data here, either train or test and get the baseline vector (or whatever you want to call it) back'''
+
 def baselineMe(self, data):
     word_vectorizer = TfidfVectorizer(
             sublinear_tf=True,
@@ -36,6 +37,6 @@ def baselineMe(self, data):
             token_pattern=r'\w{1,}',
             ngram_range=(1, 1),
             max_features=15000)
-    word_vectorizer.fit(data)
+    word_vectorizer.fit(all_data) ##all_data array has to be all_data = pd.concat([train_text, test_text])
     baseline_features = word_vectorizer.transform(data)
     return baseline_features
