@@ -19,17 +19,19 @@ from nltk.stem.wordnet import WordNetLemmatizer
 from nltk.tokenize import TweetTokenizer  
 #contains appostrophe corrections 
 import appos
-
+from utilities import Slang
 
 
 class PreProcessor:
     
     parser = CSV_Parser()
     eng_stopwords = set(stopwords.words("english"))
+    slang = Slang()
 
     lem = WordNetLemmatizer()
     tokenizer=TweetTokenizer()
     APPO = appos.appos
+    
     
     def clean(self,comment):
         """
@@ -75,7 +77,18 @@ class PreProcessor:
         #clean_sent=re.sub("  "," ",clean_sent)
         return(clean_sent)
         
-       
+    def remove_slang(self,text):
+        lookup = self.slang.get_slang_dict()
+        clean_text=''
+        for word in text.split(' '):
+            if word in lookup.keys():
+                clean_text=clean_text+lookup[word]+' '
+            else:
+                clean_text=clean_text+word+' '
+        return clean_text
+                
+            
+        
         
     def get_preprocessed_data(self):
           data=self.parser.indexed_by_class()
@@ -141,7 +154,7 @@ class Processor:
             
         
         
-p = Processor()
+
 pp=PreProcessor()
-print p.get_scores_by_class([pp.clean('')])  
+print pp.remove_slang('HUH NO WAY BRO')  
     
