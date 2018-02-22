@@ -69,7 +69,7 @@ class Tester:
         '''
         results=[]
         for pred, corr in tqdm(zip(predictions,correct)):
-            if((int(pred)>0.5 and int(corr) == 1)or(int(pred)<0.5 and int(corr) == 0)):
+            if((float(pred)>0.5 and int(corr) == 1)or(float(pred)<0.5 and int(corr) == 0)):
                 results.append(0)
             else:
                 results.append(1)
