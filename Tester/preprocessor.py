@@ -4,7 +4,7 @@ import os.path
 
 import re    #for regex
 from nltk.corpus import stopwords
-
+import pandas as pd
 from nltk.stem.wordnet import WordNetLemmatizer 
 # Tweet tokenizer does not split at apostophes which is what we want
 from nltk.tokenize import TweetTokenizer  
@@ -13,8 +13,9 @@ import sys
 lib_path = r'..\corpora'
 sys.path.insert(0, lib_path)
 import appos
-
-
+path = r"..\Toxic Comment Data\less_slang.csv"
+slang = pd.read_csv(path)
+from tqdm import tqdm
 
 class PreProcessor:
     
@@ -88,15 +89,39 @@ class PreProcessor:
                     pass
             return ascii_chars
             
+        
+        
+    def clean_data(self,dataframe):
+        '''@params = dataframe: the dataframe['comment_text']
+           @output - a panda series with all the clean sentences
+        '''
+        clean_sentences=[]
+        for item in tqdm(dataframe):
+            item = self.clean_me(item)
+            clean_sentences.append(item)
+        '''parsing slang words'''   
+        clean_slang_free_sentences=[]
+        for item in tqdm(clean_sentences):
+            item=self.remove_slang(item)
+            clean_slang_free_sentences.append(item)##.split()) #split() is required to make a vector of sentences and words for word2vec
+        df = pd.Series(clean_slang_free_sentences)
+        return df
+        
+        
+        
+    def clean_me(self,comment):
+            comment=re.sub("[^a-zA-Z0-9]", " ", comment)
+            comment = comment.upper()
+            return(comment)
+    
     def remove_slang(self,text):
-        lookup = self.get_slang_dict()
-        clean_text=''
-        for word in text.split(' '):
-            if word in lookup.keys():
-                clean_text=clean_text+lookup[word]+' '
-            else:
-                clean_text=clean_text+word+' '
-        return clean_text
+        '''@params - text: comment, sentence
+           @output - cleaned comment
+        '''
+        comment=text
+        for index,row in enumerate(slang.itertuples(),1):
+            comment=comment.replace(str(row.slang),str(row.meaning))
+        return(comment)
                 
             
 

@@ -12,7 +12,7 @@ import sklearn.model_selection as ms
 from features import Extractor
 from sklearn.linear_model import LogisticRegression
 from tqdm import tqdm
-
+from preprocessor import PreProcessor
 
 
 
@@ -22,6 +22,7 @@ class Tester:
     classes=[]
     path = r"..\Toxic Comment Data\train.csv"
     feature_extractor = Extractor()
+    prpr=PreProcessor()
     
     def __init__(self):
         self.data = pd.read_csv(self.path);
@@ -93,10 +94,11 @@ class Tester:
     def run(self):
         ''' Main fn: runs the test
         '''
+        self.data['comment_text']=self.prpr.clean_data(self.data['comment_text'])
         dataset = self.generate_dataset(self.data,self.data)
         classifier = LogisticRegression(solver='sag')
         scores = self.get_scores(classifier, dataset)
-        print scores
+        print(scores)
         
         train,test = self.generate_train_test(self.data)
         output = self.get_output(classifier,train,test)
