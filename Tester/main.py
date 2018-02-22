@@ -26,7 +26,7 @@ class Tester:
     
     def __init__(self):
         self.data = pd.read_csv(self.path);
-        self.classes = self.data.keys()[2:7]
+        self.classes = self.data.keys()[2:]
         
     
     def generate_dataset(self,data, vocab_data):
