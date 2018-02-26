@@ -113,8 +113,8 @@ class Tester:
             dataset = self.generate_dataset(clean_data, clean_data)
             classifier = LogisticRegression(solver='sag')
             scores.append(self.get_scores(classifier, dataset))
-            print scores
-        print scores
+            print(scores)
+        print(scores)
         return scores
        
     def classifier_compare(self):
@@ -125,10 +125,10 @@ class Tester:
         scores["LR"] = self.get_scores(classifier,dataset)
         classifier = SGDClassifier()
         scores["SGD"] = self.get_scores(classifier,dataset)
-        print scores
+        print(scores)
         classifier = SVC()
         scores["SVC"] = self.get_scores(classifier,dataset)
-        print scores
+        print(scores)
         return scores
         
             
