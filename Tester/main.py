@@ -122,7 +122,7 @@ class Test_Suite:
             classifier = LogisticRegression(solver='sag')
             scores[str(clean_level)] = self.framework.get_scores(classifier, dataset)
         scoresframe = pd.DataFrame.from_dict(scores)
-        print scoresframe
+        print (scoresframe)
         return scoresframe
 
        
