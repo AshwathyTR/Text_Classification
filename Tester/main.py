@@ -122,7 +122,7 @@ class Test_Suite:
             classifier = LogisticRegression(solver='sag')
             scores[str(clean_level)] = self.framework.get_scores(classifier, dataset)
         scoresframe = pd.DataFrame.from_dict(scores)
-        print (scoresframe)
+        scoresframe.to_csv('cleaning_comparision.csv', index=False)
         return scoresframe
 
        
@@ -134,15 +134,14 @@ class Test_Suite:
         scores["LR"] = self.framework.get_scores(classifier,dataset)
         classifier = SGDClassifier()
         scores["SGD"] = self.framework.get_scores(classifier,dataset)
-        print scores
         classifier = SVC()
         scores["SVC"] = self.framework.get_scores(classifier,dataset)
-        print scores
         scoresframe = pd.DataFrame.from_dict(scores)
+        scoresframe.to_csv('classifier_comparision.csv', index=False)
         return scoresframe
         
             
         
         
 t = Test_Suite()
-t.clean_compare()
+print t.clean_compare()
