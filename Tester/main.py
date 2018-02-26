@@ -124,6 +124,7 @@ class Test_Suite:
         scoresframe = pd.DataFrame.from_dict(scores)
         print scoresframe
         return scoresframe
+
        
     def classifier_compare(self):
         scores={}
@@ -139,7 +140,6 @@ class Test_Suite:
         print scores
         scoresframe = pd.DataFrame.from_dict(scores)
         return scoresframe
-        
         
             
         
