@@ -22,7 +22,7 @@ class Framework:
     
     data=[]
     classes=[]
-    path = r"..\Toxic Comment Data\dummy.csv"
+    path = r"..\Toxic Comment Data\train.csv"
     feature_extractor = Extractor()
     
     def __init__(self):
@@ -128,7 +128,7 @@ class Test_Suite:
        
     def classifier_compare(self):
         scores={}
-        clean_data = self.preprocessor.clean_all(self.data, 5)
+        clean_data = self.preprocessor.clean_all(self.framework.data, 5)
         dataset = self.framework.generate_dataset(clean_data,clean_data)
         classifier = LogisticRegression(solver='sag')
         scores["LR"] = self.framework.get_scores(classifier,dataset)
@@ -144,4 +144,5 @@ class Test_Suite:
         
         
 t = Test_Suite()
-print t.clean_compare()
+t.clean_compare()
+t.classifier_compare()
