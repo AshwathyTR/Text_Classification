@@ -11,6 +11,8 @@ import numpy as np
 import sklearn.model_selection as ms
 from features import Extractor
 from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import SGDClassifier
+from sklearn.svm import SVC
 from tqdm import tqdm
 from preprocessor import PreProcessor
 
@@ -22,7 +24,7 @@ class Tester:
     classes=[]
     path = r"..\Toxic Comment Data\train.csv"
     feature_extractor = Extractor()
-    prpr=PreProcessor()
+    preprocessor=PreProcessor()
     
     def __init__(self):
         self.data = pd.read_csv(self.path);
@@ -94,7 +96,7 @@ class Tester:
     def run(self):
         ''' Main fn: runs the test
         '''
-        self.data['comment_text']=self.prpr.clean_data(self.data['comment_text'])
+        self.data['comment_text']=self.preprocessor.clean_data(self.data['comment_text'])
         dataset = self.generate_dataset(self.data,self.data)
         classifier = LogisticRegression(solver='sag')
         scores = self.get_scores(classifier, dataset)
@@ -104,5 +106,30 @@ class Tester:
         output = self.get_output(classifier,train,test)
         output.to_csv('output.csv', index=False)
         
+    def clean_compare(self):
+        scores=[]
+        for clean_level in tqdm(range(1,2)):
+            clean_data = self.preprocessor.clean_all(self.data, clean_level)
+            dataset = self.generate_dataset(clean_data, clean_data)
+            classifier = LogisticRegression(solver='sag')
+            scores.append(self.get_scores(classifier, dataset))
+        print scores
+        return scores
+       
+    def classifier_compare(self):
+        scores={}
+        dataset = self.generate_dataset(self.data,self.data)
+        classifier = LogisticRegression(solver='sag')
+        scores["LR"] = self.get_scores(classifier,dataset)
+        classifier = SVC()
+        scores["SVC"] = self.get_scores(classifier,dataset)
+        classifier = SGDClassifier()
+        scores["SGD"] = self.get_scores(classifier,dataset)
+        print scores
+        return scores
+        
+            
+        
+        
 t = Tester()
-t.run()
+t.clean_compare()

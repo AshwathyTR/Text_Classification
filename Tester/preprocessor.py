@@ -28,26 +28,14 @@ class PreProcessor:
     slang_path = os.path.join(lib_path,r"slang_dict.txt")
     
     def __init__(self):
-        self.slang_dict =self.parse_slang()
+        pass #self.slang_dict =self.parse_slang()
+        
+    def clean_all(self, data, level):
+        for comment in tqdm(data['comment_text']):
+            data['comment_text'] = self.clean(comment,level)
+        return data
 
-   
-    def parse_slang(self):
-        #function to get slang_dict from slang_dict.txt
-        slang_dict={}
-        with open(self.slang_path,'r') as f:
-            entries = f.readlines()
-        for entry in entries:
-            if(not '`' in entry):
-                continue
-            
-            word = entry.split('`')[0]
-            meaning = entry.split('`')[1]
-            meaning = meaning.split('|')[0]
-            meaning = meaning.replace('\n','')
-            slang_dict[word.lower()] = meaning
-        return slang_dict
-
-    def clean(self,comment):
+    def clean(self,comment, level):
         """
         This function was taken from Kaggle - Stop the S@as
         This function receives comments and returns clean word-list
@@ -55,20 +43,26 @@ class PreProcessor:
         comment=comment.lower()
         #remove \n
         comment=re.sub("\\n","",comment)
+        if level == 1: return comment
         # remove leaky elements like ip,user
         comment=re.sub("\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}","",comment)
         #removing usernames
         comment=re.sub("\[\[.*\]","",comment)
+        if level == 2: return comment
+        #remove non ascii characters
+        comment = self.remove_non_ascii(comment)
+        if level == 3: return comment
         #removing non-alphabet characters 
         comment = self.remove_non_alpha(comment)
+        if level == 4: return comment
         #Split the sentences into words 
         words=self.tokenizer.tokenize(comment)
         # (')aphostophe  replacement (ie)   you're --> you are  
         words=[self.APPO[word] if word in self.APPO else word for word in words]
         words=[self.lem.lemmatize(word, "v") for word in words]
+        if level == 5: return " ".join(words)
         #remove stop words
         words = [w for w in words if not w in self.eng_stopwords]
-        
         clean_sent=" ".join(words)
         return(clean_sent)
 
@@ -89,7 +83,7 @@ class PreProcessor:
                     pass
             return ascii_chars
             
-        
+ ################# Removing Slang #############################################       
         
     def clean_data(self,dataframe):
         '''@params = dataframe: the dataframe['comment_text']
@@ -122,6 +116,34 @@ class PreProcessor:
         for index,row in enumerate(slang.itertuples(),1):
             comment=comment.replace(str(row.slang),str(row.meaning))
         return(comment)
-                
+    
+    ''' ------- OBSOLETE --------
+    def parse_slang(self):
+        #function to get slang_dict from slang_dict.txt
+        slang_dict={}
+        with open(self.slang_path,'r') as f:
+            entries = f.readlines()
+        for entry in entries:
+            if(not '`' in entry):
+                continue
+            
+            word = entry.split('`')[0]
+            meaning = entry.split('`')[1]
+            meaning = meaning.split('|')[0]
+            meaning = meaning.replace('\n','')
+            slang_dict[word.lower()] = meaning
+        return slang_dict
+        
+        
+    def remove_slang(self,text):
+         lookup = self.slang.get_slang_dict()
+         clean_text=''
+         for word in text.split(' '):
+             if word in lookup.keys():
+                 clean_text=clean_text+lookup[word]+' '
+             else:
+                 clean_text=clean_text+word+' '
+         return clean_text
+    ------------------------------'''
             
 
