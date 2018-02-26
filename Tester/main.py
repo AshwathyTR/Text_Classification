@@ -22,7 +22,7 @@ class Tester:
     
     data=[]
     classes=[]
-    path = r"..\Toxic Comment Data\train.csv"
+    path = r"..\Toxic Comment Data\dummy.csv"
     feature_extractor = Extractor()
     preprocessor=PreProcessor()
     
@@ -108,23 +108,26 @@ class Tester:
         
     def clean_compare(self):
         scores=[]
-        for clean_level in tqdm(range(1,2)):
+        for clean_level in tqdm(range(5,-1,-1)):
             clean_data = self.preprocessor.clean_all(self.data, clean_level)
             dataset = self.generate_dataset(clean_data, clean_data)
             classifier = LogisticRegression(solver='sag')
             scores.append(self.get_scores(classifier, dataset))
+            print scores
         print scores
         return scores
        
     def classifier_compare(self):
         scores={}
-        dataset = self.generate_dataset(self.data,self.data)
+        clean_data = self.preprocessor.clean_all(self.data, 5)
+        dataset = self.generate_dataset(clean_data,clean_data)
         classifier = LogisticRegression(solver='sag')
         scores["LR"] = self.get_scores(classifier,dataset)
-        classifier = SVC()
-        scores["SVC"] = self.get_scores(classifier,dataset)
         classifier = SGDClassifier()
         scores["SGD"] = self.get_scores(classifier,dataset)
+        print scores
+        classifier = SVC()
+        scores["SVC"] = self.get_scores(classifier,dataset)
         print scores
         return scores
         

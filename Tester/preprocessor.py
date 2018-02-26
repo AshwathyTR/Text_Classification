@@ -31,8 +31,10 @@ class PreProcessor:
         pass #self.slang_dict =self.parse_slang()
         
     def clean_all(self, data, level):
+        comments=[]
         for comment in tqdm(data['comment_text']):
-            data['comment_text'] = self.clean(comment,level)
+            comments.append(self.clean(comment,level))
+        data['comment_text']=pd.Series(data=comments)
         return data
 
     def clean(self,comment, level):
@@ -40,6 +42,7 @@ class PreProcessor:
         This function was taken from Kaggle - Stop the S@as
         This function receives comments and returns clean word-list
         """
+        if level == 0: return comment
         comment=comment.lower()
         #remove \n
         comment=re.sub("\\n","",comment)
@@ -53,7 +56,7 @@ class PreProcessor:
         comment = self.remove_non_ascii(comment)
         if level == 3: return comment
         #removing non-alphabet characters 
-        comment = self.remove_non_alpha(comment)
+        comment = re.sub("[^a-z\s]", "", comment)
         if level == 4: return comment
         #Split the sentences into words 
         words=self.tokenizer.tokenize(comment)
@@ -66,13 +69,6 @@ class PreProcessor:
         clean_sent=" ".join(words)
         return(clean_sent)
 
-    def remove_non_alpha(self,text):
-        alpha = ""
-        for char in text:
-            if (char in range('a','z') or char in [' ','\n']):
-                alpha = alpha+char
-        return alpha
-                
     def remove_non_ascii(self,text):
             ascii_chars = ""
             for character in text:
