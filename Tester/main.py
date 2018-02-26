@@ -18,13 +18,12 @@ from preprocessor import PreProcessor
 
 
 
-class Tester:
+class Framework:
     
     data=[]
     classes=[]
     path = r"..\Toxic Comment Data\dummy.csv"
     feature_extractor = Extractor()
-    preprocessor=PreProcessor()
     
     def __init__(self):
         self.data = pd.read_csv(self.path);
@@ -92,47 +91,58 @@ class Tester:
             output[class_name+'_mistake'] = self.check_result(output[class_name+'_predictions'],output[class_name+'_real'])
         output_frame = pd.DataFrame.from_dict(output)
         return output_frame
+ 
+
+class Test_Suite:
     
+    framework = Framework()
+    preprocessor=PreProcessor()
+    
+    def __init__(self):
+        self.framework.__init__()
+        
     def run(self):
         ''' Main fn: runs the test
         '''
-        self.data['comment_text']=self.preprocessor.clean_data(self.data['comment_text'])
-        dataset = self.generate_dataset(self.data,self.data)
+        self.framework.data['comment_text']=self.preprocessor.clean_data(self.framework.data['comment_text'])
+        dataset = self.framework.generate_dataset(self.framework.data,self.framework.data)
         classifier = LogisticRegression(solver='sag')
-        scores = self.get_scores(classifier, dataset)
+        scores = self.framework.get_scores(classifier, dataset)
         print(scores)
         
-        train,test = self.generate_train_test(self.data)
-        output = self.get_output(classifier,train,test)
+        train,test = self.framework.generate_train_test(self.data)
+        output = self.framework.get_output(classifier,train,test)
         output.to_csv('output.csv', index=False)
         
     def clean_compare(self):
-        scores=[]
+        scores={}
         for clean_level in tqdm(range(5,-1,-1)):
-            clean_data = self.preprocessor.clean_all(self.data, clean_level)
-            dataset = self.generate_dataset(clean_data, clean_data)
+            clean_data = self.preprocessor.clean_all(self.framework.data, clean_level)
+            dataset = self.framework.generate_dataset(clean_data, clean_data)
             classifier = LogisticRegression(solver='sag')
-            scores.append(self.get_scores(classifier, dataset))
-            print scores
-        print scores
-        return scores
+            scores[str(clean_level)] = self.framework.get_scores(classifier, dataset)
+        scoresframe = pd.DataFrame.from_dict(scores)
+        print scoresframe
+        return scoresframe
        
     def classifier_compare(self):
         scores={}
         clean_data = self.preprocessor.clean_all(self.data, 5)
-        dataset = self.generate_dataset(clean_data,clean_data)
+        dataset = self.framework.generate_dataset(clean_data,clean_data)
         classifier = LogisticRegression(solver='sag')
-        scores["LR"] = self.get_scores(classifier,dataset)
+        scores["LR"] = self.framework.get_scores(classifier,dataset)
         classifier = SGDClassifier()
-        scores["SGD"] = self.get_scores(classifier,dataset)
+        scores["SGD"] = self.framework.get_scores(classifier,dataset)
         print scores
         classifier = SVC()
-        scores["SVC"] = self.get_scores(classifier,dataset)
+        scores["SVC"] = self.framework.get_scores(classifier,dataset)
         print scores
-        return scores
+        scoresframe = pd.DataFrame.from_dict(scores)
+        return scoresframe
+        
         
             
         
         
-t = Tester()
+t = Test_Suite()
 t.clean_compare()
