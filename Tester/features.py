@@ -48,6 +48,21 @@ class Extractor:
             feature_val.append(count)
         return feature_val
     
+    def num_censored_words(self, data):
+        ''' @params - data :list of comments from which to extract features
+            @output - list of number of bad words per sentence
+        '''
+        feature_val=[]
+        for sentence in data:
+            count=0
+            for words in sentence:
+                #using regular expressions, each word is seperated by blank or special chars
+                if re.search('(\*)'+'*'+'(\*)',words):
+                    count+=1
+            feature_val.append(count)
+        return feature_val
+    
+    
     def num_Upper_Case(self,data):
         ''' @params - data :list of comments from which to extract features
             @output - list of number of upper case characters per sentence
@@ -63,11 +78,12 @@ class Extractor:
 
 #  debug testing below
 
-'''
 
+'''
 t=Extractor()
-ls="I will kill. you","fuck you friend, you are an idiot","HELLO world"
+ls="I will kill. you","fuck you friend, you are an idiot","HELLO world",'f*ck yo'
 print(t.num_bad_words(ls))
 print(t.num_Upper_Case(ls))
-
+print(t.num_censored_words(ls))
 '''
+
