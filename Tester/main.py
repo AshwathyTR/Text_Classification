@@ -17,7 +17,7 @@ from sklearn.svm import SVC
 from tqdm import tqdm
 from preprocessor import PreProcessor
 from scipy.sparse import hstack
-
+from sklearn.utils import shuffle
 
 
 class Framework:
@@ -25,6 +25,7 @@ class Framework:
     data=[]
     classes=[]
     path = r"..\Toxic Comment Data\threat.csv"
+    data_repo = r"..\Toxic Comment Data"
     feature_extractor = Extractor()
     
     def __init__(self):
@@ -62,6 +63,18 @@ class Framework:
         train = self.generate_dataset(train_frame,data)
         test = self.generate_dataset(test_frame,data)
         return train,test
+    
+    def generate_minibatch(self,data, size, clean_prop, comment_class):
+        positive = data.loc[f.data[comment_class] == 1]
+        negative = data.loc[f.data[comment_class] == 0]
+        num_neg = int(size*clean_prop)
+        num_pos = size - num_neg
+        sample_pos = positive.sample(n=num_pos)
+        sample_neg = negative.sample(n=num_neg)
+        sample = pd.concat([sample_pos,sample_neg])
+        sample=shuffle(sample)
+        return sample
+    
      
     def get_scores(self,classifier,dataset):
         ''' @params - classifier :classifier from sklearn
@@ -153,5 +166,5 @@ class Test_Suite:
         
             
 f = Framework()
-d = f.generate_dataset(f.data, f.data)  
+d = f.generate_minibatch(f.data, 10, 0.5, 'toxic')  
 
