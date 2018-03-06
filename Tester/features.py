@@ -12,6 +12,9 @@ class Extractor:
     
     path = r"..\corpora\bad-words.txt"
     
+    def __init__(self):
+        pass
+    
     def get_word_histogram(self, data, vocab_data):
         ''' @params - data :list of comments from which to extract features
             @params - vocab_data: list of comments from which vocabulary should be built
