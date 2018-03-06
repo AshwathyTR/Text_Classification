@@ -22,7 +22,7 @@ class Framework:
     
     data=[]
     classes=[]
-    path = r"..\Toxic Comment Data\train.csv"
+    path = r"..\Toxic Comment Data\dummy.csv"
     feature_extractor = Extractor()
     
     def __init__(self):
@@ -110,7 +110,7 @@ class Test_Suite:
         scores = self.framework.get_scores(classifier, dataset)
         print(scores)
         
-        train,test = self.framework.generate_train_test(self.data)
+        train,test = self.framework.generate_train_test(self.framework.data)
         output = self.framework.get_output(classifier,train,test)
         output.to_csv('output.csv', index=False)
         
@@ -144,5 +144,4 @@ class Test_Suite:
         
         
 t = Test_Suite()
-t.clean_compare()
-t.classifier_compare()
+t.run()
