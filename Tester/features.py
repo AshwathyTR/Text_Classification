@@ -9,7 +9,7 @@ import re
 from sklearn.feature_extraction.text import CountVectorizer,TfidfVectorizer
 import numpy as np
 from tqdm import tqdm
-
+from scipy.sparse import coo_matrix
 class Extractor:
     
     path = r"..\corpora\bad-words.txt"
@@ -48,7 +48,7 @@ class Extractor:
                 if re.search('(\s|^)'+bw+'(\s|$|\.)',sentence):
                     count+=1
             feature_val.append(count)
-        bad_words_feature=np.asarray(feature_val)
+        bad_words_feature=coo_matrix(np.asarray(feature_val).transpose()).toarray()
         return bad_words_feature
 
     

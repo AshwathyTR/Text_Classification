@@ -16,6 +16,7 @@ from sklearn.pipeline import FeatureUnion
 from sklearn.svm import SVC
 from tqdm import tqdm
 from preprocessor import PreProcessor
+from scipy.sparse import hstack
 
 
 
@@ -23,7 +24,7 @@ class Framework:
     
     data=[]
     classes=[]
-    path = r"..\Toxic Comment Data\train.csv"
+    path = r"..\Toxic Comment Data\threat.csv"
     feature_extractor = Extractor()
     
     def __init__(self):
@@ -43,7 +44,7 @@ class Framework:
         '''PROBLEM HERE, TRYING TO COMBINE FEATURES'''
         bad_words_vectors=self.feature_extractor.num_bad_words(data['comment_text'])
         bad_words_vectors=np.reshape(bad_words_vectors,(-1,1))
-        C=np.vstack((word_vectors.T,bad_words_vectors)).T
+        C=hstack((word_vectors,bad_words_vectors))
         dataset['features']=C
         #bad_words_vectors=np.reshape(bad_words_vectors,(-1,1))
         #print(bad_words_vectors.shape)
@@ -152,5 +153,6 @@ class Test_Suite:
         return scoresframe
         
             
-        
+f = Framework()
+d = f.generate_dataset(f.data, f.data)  
 
