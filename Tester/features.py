@@ -38,7 +38,7 @@ class Extractor:
         bad_text.columns=['bad']
         feature_val=[]
         print("counting bad words..")
-        for sentence in (data):
+        for sentence in tqdm(data):
             count=0
             for bw in bad_text['bad']:
                 #using regular expressions, each word is seperated by blank or special chars

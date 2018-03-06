@@ -40,6 +40,7 @@ class Framework:
         word_vectors = self.feature_extractor.get_word_histogram(data['comment_text'],vocab_data['comment_text'])
         #word_vectors=word_vectors.todense
         #word_vectors=np.reshape(word_vectors,(-1,1))
+        '''PROBLEM HERE, TRYING TO COMBINE FEATURES'''
         bad_words_vectors=self.feature_extractor.num_bad_words(data['comment_text'])
         bad_words_vectors=np.reshape(bad_words_vectors,(-1,1))
         C=np.vstack((word_vectors.T,bad_words_vectors)).T
