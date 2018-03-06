@@ -120,12 +120,8 @@ class Test_Suite:
         classifier = LogisticRegression(solver='sag')
         scores = self.framework.get_scores(classifier, dataset)
         print(scores)
-<<<<<<< HEAD
-        train,test = self.framework.generate_train_test(self.data)
-=======
-        
+
         train,test = self.framework.generate_train_test(self.framework.data)
->>>>>>> 57d5b6243bdf7b6d7184002a47017dcaf2520fea
         output = self.framework.get_output(classifier,train,test)
         output.to_csv('output.csv', index=False)
         
