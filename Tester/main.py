@@ -22,7 +22,7 @@ class Framework:
     
     data=[]
     classes=[]
-    path = r"..\Toxic Comment Data\dummy.csv"
+    path = r"..\Toxic Comment Data\train.csv"
     feature_extractor = Extractor()
     
     def __init__(self):
@@ -142,6 +142,4 @@ class Test_Suite:
         
             
         
-        
-t = Test_Suite()
-t.run()
+
