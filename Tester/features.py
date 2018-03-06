@@ -49,6 +49,7 @@ class Extractor:
                     count+=1
             feature_val.append(count)
         bad_words_feature=coo_matrix(np.asarray(feature_val).transpose()).toarray()
+        bad_words_feature=np.reshape(bad_words_feature,(-1,1))
         return bad_words_feature
 
     

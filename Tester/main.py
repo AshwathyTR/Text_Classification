@@ -43,9 +43,8 @@ class Framework:
         #word_vectors=np.reshape(word_vectors,(-1,1))
         '''PROBLEM HERE, TRYING TO COMBINE FEATURES'''
         bad_words_vectors=self.feature_extractor.num_bad_words(data['comment_text'])
-        bad_words_vectors=np.reshape(bad_words_vectors,(-1,1))
-        C=hstack((word_vectors,bad_words_vectors))
-        dataset['features']=C
+        dataset['features'] =  hstack((word_vectors,bad_words_vectors))
+        
         #bad_words_vectors=np.reshape(bad_words_vectors,(-1,1))
         #print(bad_words_vectors.shape)
         #dataset['features']=word_vectors
