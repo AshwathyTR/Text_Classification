@@ -12,6 +12,7 @@ import sklearn.model_selection as ms
 from features import Extractor
 from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import SGDClassifier
+from sklearn.pipeline import FeatureUnion
 from sklearn.svm import SVC
 from tqdm import tqdm
 from preprocessor import PreProcessor
@@ -37,7 +38,17 @@ class Framework:
         '''
         dataset = {}
         word_vectors = self.feature_extractor.get_word_histogram(data['comment_text'],vocab_data['comment_text'])
-        dataset['features'] = word_vectors
+        #word_vectors=word_vectors.todense
+        #word_vectors=np.reshape(word_vectors,(-1,1))
+        '''PROBLEM HERE, TRYING TO COMBINE FEATURES'''
+        bad_words_vectors=self.feature_extractor.num_bad_words(data['comment_text'])
+        bad_words_vectors=np.reshape(bad_words_vectors,(-1,1))
+        C=np.vstack((word_vectors.T,bad_words_vectors)).T
+        dataset['features']=C
+        #bad_words_vectors=np.reshape(bad_words_vectors,(-1,1))
+        #print(bad_words_vectors.shape)
+        #dataset['features']=word_vectors
+        #dataset['features'] = np.hstack([word_vectors,bad_words_vectors])
         dataset['comment_text'] = data['comment_text']
         for classname in self.classes:
             dataset[classname] = data[classname]
@@ -109,8 +120,12 @@ class Test_Suite:
         classifier = LogisticRegression(solver='sag')
         scores = self.framework.get_scores(classifier, dataset)
         print(scores)
+<<<<<<< HEAD
+        train,test = self.framework.generate_train_test(self.data)
+=======
         
         train,test = self.framework.generate_train_test(self.framework.data)
+>>>>>>> 57d5b6243bdf7b6d7184002a47017dcaf2520fea
         output = self.framework.get_output(classifier,train,test)
         output.to_csv('output.csv', index=False)
         

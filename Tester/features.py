@@ -7,6 +7,8 @@ Created on Tue Feb 20 16:33:45 2018
 import pandas as pd
 import re
 from sklearn.feature_extraction.text import CountVectorizer,TfidfVectorizer
+import numpy as np
+from tqdm import tqdm
 
 class Extractor:
     
@@ -37,26 +39,25 @@ class Extractor:
         '''
         bad_text=pd.read_csv(self.path,sep="\n", header=None)
         bad_text.columns=['bad']
-        bad_words=[]
-        for bw in bad_text['bad']:
-            bad_words.append(bw)
         feature_val=[]
-        for sentence in data:
+        print("counting bad words..")
+        for sentence in tqdm(data):
             count=0
-            for bw in bad_words:
+            for bw in bad_text['bad']:
                 #using regular expressions, each word is seperated by blank or special chars
                 if re.search('(\s|^)'+bw+'(\s|$|\.)',sentence):
-                    print(bw)
                     count+=1
             feature_val.append(count)
-        return feature_val
+        bad_words_feature=np.asarray(feature_val)
+        return bad_words_feature
+
     
     def num_censored_words(self, data):
         ''' @params - data :list of comments from which to extract features
             @output - list of number of bad words per sentence
         '''
         feature_val=[]
-        for sentence in data:
+        for sentence in tqdm(data):
             count=0
             for words in sentence:
                 #using regular expressions, each word is seperated by blank or special chars
