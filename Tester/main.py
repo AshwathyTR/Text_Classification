@@ -141,7 +141,7 @@ class Framework:
         test_props = np.arange(0.0, 1.0, 0.1)
         for test_prop in test_props:
                 data = self.generate_minibatch(test_data,500,test_prop,comment_class)
-                dataset = self.generate_dataset(data,self.framework.data)
+                dataset = self.generate_dataset(data,self.data)
                 predicted = model.predict(dataset['features'])
                 accuracy = self.get_accuracy(predicted, dataset[comment_class])
                 accuracies[test_prop] = accuracy
@@ -213,3 +213,6 @@ class Test_Suite:
         train = self.framework.generate_dataset(train_frame,self.framework.data)
         classifier.fit(train['features'], train['toxic'])
         self.framework.plot_bias(classifier, test_frame, 'toxic')
+
+t = Test_Suite()
+t.bias_check()
