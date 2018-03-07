@@ -214,5 +214,3 @@ class Test_Suite:
         classifier.fit(train['features'], train['toxic'])
         self.framework.plot_bias(classifier, test_frame, 'toxic')
 
-t = Test_Suite()
-t.bias_check()
