@@ -20,7 +20,7 @@ from sklearn.cross_validation import KFold
 class Mods:
     
     f = Framework()
-    f_params = {
+    rf_params = {
     'n_jobs': -1,
     'n_estimators': 500,
      'warm_start': True, 
@@ -79,9 +79,7 @@ class Mods:
     def Stack_Method(self):
         train_frame,test_frame= ms.train_test_split(self.f.data,test_size = 0.2, shuffle=True)
         comment_class='toxic'
-        ntrain = train_frame.shape[0]
-        ntest = test_frame.shape[0]
-        kf = KFold(ntrain, n_folds= self.NFOLDS, random_state=self.SEED)
+        
         
         rf = SklearnHelper(clf=RandomForestClassifier, seed=self.SEED, params=self.rf_params)
         et = SklearnHelper(clf=ExtraTreesClassifier, seed=self.SEED, params=self.et_params)
@@ -95,6 +93,12 @@ class Mods:
          # Create our OOF train and test predictions. These base results will be used as new features
         batch = self.f.generate_minibatch(train_frame,15000,0.5,comment_class)
         dataset = self.f.generate_dataset(batch,self.f.data)
+        
+        ntrain = batch.shape[0]
+        ntest = test_frame.shape[0]
+        kf = KFold(ntrain, n_folds= self.NFOLDS, random_state=self.SEED)
+        
+        
         x_chunk=dataset['features']
         y_chunk = dataset[comment_class]
          
