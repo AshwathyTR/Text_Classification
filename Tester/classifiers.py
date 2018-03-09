@@ -27,6 +27,7 @@ class Mods:
             model.partial_fit(x_chunk, y_chunk,classes=np.unique(y_chunk))
             #for comment_class in self.f.classes:
         self.f.plot_bias(model, test_frame,comment_class)
+        return model
             
     
  
