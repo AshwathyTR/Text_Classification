@@ -14,13 +14,21 @@ from sklearn.ensemble import (RandomForestClassifier, AdaBoostClassifier,
                               GradientBoostingClassifier, ExtraTreesClassifier)
 import pandas as pd
 from sklearn.svm import SVC
-import xgboost as xgb
+
+import sys
+sys.path.append('C:\\Users\\Croft')
+
 from sklearn.cross_validation import KFold
+import xgboost as xgb
+
+
+
+
 
 class Mods:
     
     f = Framework()
-    f_params = {
+    rf_params = {
     'n_jobs': -1,
     'n_estimators': 500,
      'warm_start': True, 
@@ -65,9 +73,9 @@ class Mods:
         
         train_frame,test_frame= ms.train_test_split(self.f.data,test_size = 0.2, shuffle=True)
         comment_class='toxic'
-        model = SGDClassifier(loss='log')
+        model = SGDClassifier(loss='hinge')
         for i in tqdm(range(0,50,1)):
-            batch = self.f.generate_minibatch(train_frame,100,0.5,comment_class)
+            batch = self.f.generate_minibatch(train_frame,250,0.5,comment_class)
             dataset = self.f.generate_dataset(batch,self.f.data)
             x_chunk=dataset['features']
             y_chunk = dataset[comment_class]
@@ -78,9 +86,7 @@ class Mods:
     def Stack_Method(self):
         train_frame,test_frame= ms.train_test_split(self.f.data,test_size = 0.2, shuffle=True)
         comment_class='toxic'
-        ntrain = train_frame.shape[0]
-        ntest = test_frame.shape[0]
-        kf = KFold(ntrain, n_folds= self.NFOLDS, random_state=self.SEED)
+        
         
         rf = SklearnHelper(clf=RandomForestClassifier, seed=self.SEED, params=self.rf_params)
         et = SklearnHelper(clf=ExtraTreesClassifier, seed=self.SEED, params=self.et_params)
@@ -92,22 +98,43 @@ class Mods:
         #for comment_class in tqdm(self.f.classes):
          #   print("training model for %s class"%(self.f.classes))
          # Create our OOF train and test predictions. These base results will be used as new features
-        batch = self.f.generate_minibatch(train_frame,15000,0.5,comment_class)
+        batch = self.f.generate_minibatch(train_frame,500,0.5,comment_class)
         dataset = self.f.generate_dataset(batch,self.f.data)
         x_chunk=dataset['features']
         y_chunk = dataset[comment_class]
          
-        et_oof_train, et_oof_test = self.get_oof(et, x_chunk, y_chunk, test_frame,ntrain,ntest,kf) # Extra Trees
-        rf_oof_train, rf_oof_test = self.get_oof(rf,x_chunk, y_chunk, test_frame,ntrain,ntest,kf) # Random Forest
-        ada_oof_train, ada_oof_test = self.get_oof(ada, x_chunk, y_chunk, test_frame,ntrain,ntest,kf) # AdaBoost 
-        gb_oof_train, gb_oof_test = self.get_oof(gb,x_chunk, y_chunk, test_frame,ntrain,ntest,kf) # Gradient Boost
-        svc_oof_train, svc_oof_test = self.get_oof(svc,x_chunk, y_chunk, test_frame,ntrain,ntest,kf) # Support Vector Classifier
+        test_batch = self.f.generate_minibatch(test_frame,500,0.5,comment_class)
+        test_dataset = self.f.generate_dataset(test_batch,self.f.data)
+        test=test_dataset['features']
+        
+        ntrain = batch.shape[0]
+        ntest = test_batch.shape[0]
+        kf = KFold(ntrain, n_folds= self.NFOLDS, random_state=self.SEED)
+           
+        
+        
+        y_train = y_chunk.ravel()
+        #train = train.drop(['Survived'], axis=1)
+        x_train = x_chunk.toarray() # Creates an array of the train data
+        x_test = test.toarray()
+        
+        print("Training model - Extra Trees") 
+        et_oof_train, et_oof_test = self.get_oof(et, x_train, y_train, x_test,ntrain,ntest,kf) # Extra Trees
+        print("Training model - Random Forest") 
+        rf_oof_train, rf_oof_test = self.get_oof(rf,x_train, y_train, x_test,ntrain,ntest,kf) # Random Forest
+        print("Training model - AdaBoost") 
+        ada_oof_train, ada_oof_test = self.get_oof(ada, x_train, y_train, x_test,ntrain,ntest,kf) # AdaBoost
+        print("Training model - Gradient Boosting") 
+        gb_oof_train, gb_oof_test = self.get_oof(gb,x_train, y_train, x_test,ntrain,ntest,kf) # Gradient Boost
+        print("Training model - SVM") 
+        svc_oof_train, svc_oof_test = self.get_oof(svc,x_train, y_train, x_test,ntrain,ntest,kf) # Support Vector Classifier
         
         #splice answers together to use for second lvl training
+        print("Splicing output together") 
         x_train = np.concatenate(( et_oof_train, rf_oof_train, ada_oof_train, gb_oof_train, svc_oof_train), axis=1)
         x_test = np.concatenate(( et_oof_test, rf_oof_test, ada_oof_test, gb_oof_test, svc_oof_test), axis=1)
 
-        print("Training is complete")    
+        print("Training XGB classifier")    
          
         
         gbm = xgb.XGBClassifier(
@@ -143,7 +170,7 @@ class Mods:
         oof_test = np.zeros((ntest,))
         oof_test_skf = np.empty((self.NFOLDS, ntest))
 
-        for i, (train_index, test_index) in enumerate(kf):
+        for i, (train_index, test_index) in tqdm(enumerate(kf)):
             x_tr = x_train[train_index]
             y_tr = y_train[train_index]
             x_te = x_train[test_index]
