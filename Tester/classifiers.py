@@ -15,8 +15,8 @@ from sklearn.ensemble import (RandomForestClassifier, AdaBoostClassifier,
 import pandas as pd
 from sklearn.svm import SVC
 
-import sys
-sys.path.append('C:\\Users\\Croft')
+#import sys
+#sys.path.append('C:\\Users\\Croft\\xgboost\\python-package')
 
 from sklearn.cross_validation import KFold
 import xgboost as xgb
