@@ -82,6 +82,7 @@ class Mods:
             model.partial_fit(x_chunk, y_chunk,classes=np.unique(y_chunk))
             #for comment_class in self.f.classes:
         self.f.plot_bias(model, test_frame,comment_class)
+        return model
     
     def Stack_Method(self):
         train_frame,test_frame= ms.train_test_split(self.f.data,test_size = 0.2, shuffle=True)
@@ -100,6 +101,12 @@ class Mods:
          # Create our OOF train and test predictions. These base results will be used as new features
         batch = self.f.generate_minibatch(train_frame,500,0.5,comment_class)
         dataset = self.f.generate_dataset(batch,self.f.data)
+        
+        ntrain = batch.shape[0]
+        ntest = test_frame.shape[0]
+        kf = KFold(ntrain, n_folds= self.NFOLDS, random_state=self.SEED)
+        
+        
         x_chunk=dataset['features']
         y_chunk = dataset[comment_class]
          
