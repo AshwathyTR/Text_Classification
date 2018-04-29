@@ -204,6 +204,24 @@ class Test_Suite:
         scoresframe.to_csv('classifier_comparision.csv', index=False)
         return scoresframe
     
+     def kernel_compare(self):
+        ''' Tries out different classifiers and outputs results
+        '''
+        scores={}
+        clean_data = self.preprocessor.clean_all(self.framework.data, 5)
+        dataset = self.framework.generate_dataset(clean_data,clean_data)
+        classifier = LinearSVC()
+        scores["Linear"] = self.framework.get_scores(classifier,dataset)
+        classifier = SVC(kernel='poly', degree=2)
+        scores["Poly"] = self.framework.get_scores(classifier,dataset)
+        classifier = SVC(kernel = 'rbf')
+        scores["RBF"] = self.framework.get_scores(classifier,dataset)
+        classifier = SVC(kernel = 'sigmoid')
+        scores["Sigmoid"] = self.framework.get_scores(classifier,dataset)
+        scoresframe = pd.DataFrame.from_dict(scores)
+        scoresframe.to_csv('classifier_comparision.csv', index=False)
+        return scoresframe
+    
     
     def bias_check(self):
         ''' Checks how accuracy varies with varying concentration of clean samples
