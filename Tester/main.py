@@ -19,6 +19,12 @@ from preprocessor import PreProcessor
 from scipy.sparse import hstack
 from sklearn.utils import shuffle
 import matplotlib.pyplot as plt
+from shogun.Features import *
+from shogun.Kernel import *
+from shogun.Classifier import *
+from shogun.Evaluation import *
+from modshogun import StringCharFeatures, RAWBYTE
+from shogun.Kernel import SSKStringKernel
 
 
 class Framework:
@@ -206,7 +212,11 @@ class Test_Suite:
         return scoresframe
     
     def kernel_compare(self):
-        ''' Tries out different classifiers and outputs results
+
+        
+
+        ''' Tries out different kernels and outputs results
+
         '''
         scores={}
         clean_data = self.preprocessor.clean_all(self.framework.data, 5)
@@ -220,10 +230,21 @@ class Test_Suite:
         classifier = SVC(kernel = 'sigmoid')
         scores["Sigmoid"] = self.framework.get_scores(classifier,dataset)
         scoresframe = pd.DataFrame.from_dict(scores)
-        scoresframe.to_csv('classifier_comparision.csv', index=False)
+        scoresframe.to_csv('kernel_comparision.csv', index=False)
         return scoresframe
     
-    
+    def string_kernel(self):
+        clean_data = self.preprocessor.clean_all(self.framework.data, 5)
+        train,test = self.framework.generate_train_test(clean_data)
+        #  n=1  0.5=lambda Lodhi 2002
+        string_kernel = SSKStringKernel(train['features'], train['features'], 1, 0.5)
+        target = BinaryLabels(train['toxic'])
+        classifier = LibSVM(1.0, string_kernels, target)
+        classifier.train()
+        predicted = classifier.apply(test['features']).get_labels()
+        print self.framework.get_accuracy(predicted,test['toxic'])
+        
+        
     def bias_check(self):
         ''' Checks how accuracy varies with varying concentration of clean samples
         '''
@@ -233,5 +254,7 @@ class Test_Suite:
         classifier.fit(train['features'], train['toxic'])
         self.framework.plot_bias(classifier, test_frame, 'toxic')
 
+
 x=Test_Suite()
 x.run()
+
