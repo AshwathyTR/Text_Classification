@@ -40,7 +40,8 @@ class Framework:
             @output - dictionary containing features, comment_text and classification targets
         '''
         dataset = {}
-        word_vectors = self.feature_extractor.get_word_histogram(data['comment_text'],vocab_data['comment_text'])
+        #word_vectors = self.feature_extractor.get_word_histogram(data['comment_text'],vocab_data['comment_text'])
+        word_vectors = self.feature_extractor.get_word2vec_features(data['comment_text'])
         #bad_words_vectors=self.feature_extractor.num_bad_words(data['comment_text'])
         #dataset['features'] =  hstack((word_vectors,bad_words_vectors))
         dataset['features'] = word_vectors
@@ -164,7 +165,7 @@ class Test_Suite:
     def run(self):
         ''' Main fn: example to show how the framework should be used
         '''
-        self.framework.data['comment_text']=self.preprocessor.clean_data(self.framework.data['comment_text'])
+        self.framework.data=self.preprocessor.clean_all(self.framework.data,6)
         dataset = self.framework.generate_dataset(self.framework.data,self.framework.data)
         classifier = LogisticRegression(solver='sag')
         scores = self.framework.get_scores(classifier, dataset)
@@ -204,7 +205,7 @@ class Test_Suite:
         scoresframe.to_csv('classifier_comparision.csv', index=False)
         return scoresframe
     
-     def kernel_compare(self):
+    def kernel_compare(self):
         ''' Tries out different classifiers and outputs results
         '''
         scores={}
@@ -232,3 +233,5 @@ class Test_Suite:
         classifier.fit(train['features'], train['toxic'])
         self.framework.plot_bias(classifier, test_frame, 'toxic')
 
+x=Test_Suite()
+x.run()

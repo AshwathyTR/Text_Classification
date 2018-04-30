@@ -6,14 +6,16 @@ Created on Tue Feb 20 16:33:45 2018
 """
 import pandas as pd
 import re
+from preprocessor import PreProcessor
 from sklearn.feature_extraction.text import CountVectorizer,TfidfVectorizer
+from gensim.models import Word2Vec
 import numpy as np
 from tqdm import tqdm
 from scipy.sparse import coo_matrix
 class Extractor:
     
     path = r"..\corpora\bad-words.txt"
-    
+    preprocessor=PreProcessor()
     def __init__(self):
         pass
     
@@ -32,6 +34,32 @@ class Extractor:
         word_vectorizer.fit(vocab_data) ##ideally use all_data (where all_data array has to be all_data = pd.concat([train_text, test_text]))
         histogram = word_vectorizer.transform(data)
         return histogram
+    
+    def get_word2vec_features(self,data):
+        ''' @params - data :list of comments from which to extract features
+            @output - Word2Vec features
+        '''
+        
+        split_data=self.preprocessor.split_sentences(data)
+        
+        '''use these lines to train and save the word2vec model'''
+        print('Creating word2vec vocabulary. You should remove these lines of code if you already did this.)
+        model = Word2Vec(split_data, size=100, window=5, min_count=5, workers=4, hs=1, negative =0)
+        model.save(r"..\corpora\toxic.model")
+        model.wv.save_word2vec_format(r"..\corpora\toxic.model.bin", binary=True)
+
+        '''use this line when already trained a word2vec model'''
+        model = Word2Vec.load(r"..\corpora\toxic.model")
+        '''The juice'''
+        w2v = dict(zip(model.wv.index2word, model.wv.syn0))
+        dim = len(next(iter (w2v.values())))
+        return np.array([
+            np.mean([w2v[w] for w in sentence if w in w2v]
+                    or [np.zeros(dim)], axis=0)
+            for sentence in data
+                ])
+        
+        
     
     def num_bad_words(self, data):
         ''' @params - data :list of comments from which to extract features
@@ -84,9 +112,13 @@ class Extractor:
 #  debug testing below
 
 
-'''
-t=Extractor()
+'''t=Extractor()
 ls="I will kill. you","fuck you friend, you are an idiot","HELLO world",'f*ck yo'
+
+bob=pd.Series(ls)
+lol=t.get_word2vec_features(bob)
+lal=t.get_word_histogram(ls,ls)
+
 print(t.num_bad_words(ls))
 print(t.num_Upper_Case(ls))
 print(t.num_censored_words(ls))
