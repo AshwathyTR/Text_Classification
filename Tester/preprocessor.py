@@ -38,7 +38,7 @@ class PreProcessor:
             #i=i+1
             #if(i>10):
              #   break
-        data['comment_text']=pd.Series(data=comments)
+        data=pd.Series(data=comments)
         return data
 
     def clean(self,comment, level):
@@ -102,17 +102,19 @@ class PreProcessor:
         return df
     
     
-    def split_sentences(self,dataframe):
+    def get_sentences(self,dataframe):
         '''@params = dataframe: the dataframe['comment_text']
            @output - a panda series with all the clean sentences
         '''
         '''parsing slang words'''   
         dataframe = dataframe[dataframe.notnull()]
-        clean_slang_free_sentences=[]
+        tokens=[]
         for item in tqdm(dataframe):
             #item=self.remove_slang(item)
-            clean_slang_free_sentences.append(item.split()) #split() is required to make a vector of sentences and words for word2vec
-        df = pd.Series(clean_slang_free_sentences)
+            tokens.append(item.split()) #split() is required to make a vector of sentences and words for word2vec
+            
+                
+        df = pd.Series(tokens)
         return df
         
         

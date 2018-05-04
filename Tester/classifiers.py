@@ -25,50 +25,12 @@ import xgboost as xgb
 
 
 
-class Mods:
+class Modified_Classifiers:
     
     f = Framework()
-    rf_params = {
-    'n_jobs': -1,
-    'n_estimators': 500,
-     'warm_start': True, 
-     #'max_features': 0.2,
-    'max_depth': 6,
-    'min_samples_leaf': 2,
-    'max_features' : 'sqrt',
-    'verbose': 0
-    }
-
-    # Extra Trees Parameters
-    et_params = {
-    'n_jobs': -1,
-    'n_estimators':500,
-    #'max_features': 0.5,
-    'max_depth': 8,
-    'min_samples_leaf': 2,
-    'verbose': 0
-    }
-
-    # AdaBoost parameters
-    ada_params = {
-    'n_estimators': 500,
-    'learning_rate' : 0.75
-    }
-
-    # Gradient Boosting parameters
-    gb_params = {
-    'n_estimators': 500,
-     #'max_features': 0.2,
-    'max_depth': 5,
-    'min_samples_leaf': 2,
-    'verbose': 0
-    }
-
-    # Support Vector Classifier parameters 
-    svc_params = {
-    'kernel' : 'linear',
-    'C' : 0.025
-       }
+    def __init__(self):
+        pass
+        
     def minibatch_LR(self):
         
         train_frame,test_frame= ms.train_test_split(self.f.data,test_size = 0.2, shuffle=True)
@@ -84,135 +46,6 @@ class Mods:
         self.f.plot_bias(model, test_frame,comment_class)
         return model
     
-    def Stack_Method(self):
-        train_frame,test_frame= ms.train_test_split(self.f.data,test_size = 0.2, shuffle=True)
-        comment_class='toxic'
-        
-        
-        rf = SklearnHelper(clf=RandomForestClassifier, seed=self.SEED, params=self.rf_params)
-        et = SklearnHelper(clf=ExtraTreesClassifier, seed=self.SEED, params=self.et_params)
-        ada = SklearnHelper(clf=AdaBoostClassifier, seed=self.SEED, params=self.ada_params)
-        gb = SklearnHelper(clf=GradientBoostingClassifier, seed=self.SEED, params=self.gb_params)
-        svc = SklearnHelper(clf=SVC, seed=self.SEED, params=self.svc_params)
-        
-        #models=[]
-        #for comment_class in tqdm(self.f.classes):
-         #   print("training model for %s class"%(self.f.classes))
-         # Create our OOF train and test predictions. These base results will be used as new features
-        batch = self.f.generate_minibatch(train_frame,500,0.5,comment_class)
-        dataset = self.f.generate_dataset(batch,self.f.data)
-        
-        ntrain = batch.shape[0]
-        ntest = test_frame.shape[0]
-        kf = KFold(ntrain, n_folds= self.NFOLDS, random_state=self.SEED)
-        
-        
-        x_chunk=dataset['features']
-        y_chunk = dataset[comment_class]
-         
-        test_batch = self.f.generate_minibatch(test_frame,500,0.5,comment_class)
-        test_dataset = self.f.generate_dataset(test_batch,self.f.data)
-        test=test_dataset['features']
-        
-        ntrain = batch.shape[0]
-        ntest = test_batch.shape[0]
-        kf = KFold(ntrain, n_folds= self.NFOLDS, random_state=self.SEED)
-           
-        
-        
-        y_train = y_chunk.ravel()
-        #train = train.drop(['Survived'], axis=1)
-        x_train = x_chunk.toarray() # Creates an array of the train data
-        x_test = test.toarray()
-        
-        print("Training model - Extra Trees") 
-        et_oof_train, et_oof_test = self.get_oof(et, x_train, y_train, x_test,ntrain,ntest,kf) # Extra Trees
-        print("Training model - Random Forest") 
-        rf_oof_train, rf_oof_test = self.get_oof(rf,x_train, y_train, x_test,ntrain,ntest,kf) # Random Forest
-        print("Training model - AdaBoost") 
-        ada_oof_train, ada_oof_test = self.get_oof(ada, x_train, y_train, x_test,ntrain,ntest,kf) # AdaBoost
-        print("Training model - Gradient Boosting") 
-        gb_oof_train, gb_oof_test = self.get_oof(gb,x_train, y_train, x_test,ntrain,ntest,kf) # Gradient Boost
-        print("Training model - SVM") 
-        svc_oof_train, svc_oof_test = self.get_oof(svc,x_train, y_train, x_test,ntrain,ntest,kf) # Support Vector Classifier
-        
-        #splice answers together to use for second lvl training
-        print("Splicing output together") 
-        x_train = np.concatenate(( et_oof_train, rf_oof_train, ada_oof_train, gb_oof_train, svc_oof_train), axis=1)
-        x_test = np.concatenate(( et_oof_test, rf_oof_test, ada_oof_test, gb_oof_test, svc_oof_test), axis=1)
 
-        print("Training XGB classifier")    
-         
-        
-        gbm = xgb.XGBClassifier(
-        #learning_rate = 0.02,
-        n_estimators= 2000,
-        max_depth= 4,
-        min_child_weight= 2,
-        #gamma=1,
-        gamma=0.9,                        
-        subsample=0.8,
-        colsample_bytree=0.8,
-        objective= 'binary:logistic',
-        nthread= -1,
-        scale_pos_weight=1).fit(x_train, y_chunk)
-        predictions = gbm.predict(test_frame)
-        submit = pd.DataFrame({ 'comment_text': test_frame['comment_frame'],
-                            comment_class: predictions })
-        submit.to_csv("Stack_Results.csv", index=False)
-        self.f.plot_bias(gbm, test_frame,comment_class)
-        
-        
-        
-             #models.append(model)
-        #self.f.plot_bias(model, test_frame,comment_class)
-     
-    # Some useful parameters which will come in handy later on
-    SEED = 0 # for reproducibility
-    NFOLDS = 5 # set folds for out-of-fold prediction
-    
-        
-    def get_oof(self,clf, x_train, y_train, x_test,ntrain,ntest,kf):
-        oof_train = np.zeros((ntrain,))
-        oof_test = np.zeros((ntest,))
-        oof_test_skf = np.empty((self.NFOLDS, ntest))
-
-        for i, (train_index, test_index) in tqdm(enumerate(kf)):
-            x_tr = x_train[train_index]
-            y_tr = y_train[train_index]
-            x_te = x_train[test_index]
-            
-            clf.train(x_tr, y_tr)
-            
-            oof_train[test_index] = clf.predict(x_te)
-            oof_test_skf[i, :] = clf.predict(x_test)
-            
-            oof_test[:] = oof_test_skf.mean(axis=0)
-        return oof_train.reshape(-1, 1), oof_test.reshape(-1, 1)
     
     
-
-
-# Class to extend the Sklearn classifier
-class SklearnHelper(object):
-    def __init__(self, clf, seed=0, params=None):
-        params['random_state'] = seed
-        self.clf = clf(**params)
-
-    def train(self, x_train, y_train):
-        self.clf.fit(x_train, y_train)
-
-    def predict(self, x):
-        return self.clf.predict(x)
-    
-    def fit(self,x,y):
-        return self.clf.fit(x,y)
-    
-    def feature_importances(self,x,y):
-        print(self.clf.fit(x,y).feature_importances_)    
-    
-
- 
-m = Mods()
-#m.minibatch_LR()
-m.Stack_Method()

@@ -5,10 +5,12 @@ Created on Tue Feb 20 16:33:45 2018
 @author: Ashwathy 
 """
 import pandas as pd
+import os
 import re
 from preprocessor import PreProcessor
-from sklearn.feature_extraction.text import CountVectorizer,TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
 from gensim.models import Word2Vec
+from gensim.utils import RULE_KEEP
 import numpy as np
 from tqdm import tqdm
 from scipy.sparse import coo_matrix
@@ -30,9 +32,10 @@ class Extractor:
                 analyzer='word',
                 token_pattern=r'\w{1,}',
                 ngram_range=(1, 1),
-                max_features=15000)
+                max_features=None)
         word_vectorizer.fit(vocab_data) ##ideally use all_data (where all_data array has to be all_data = pd.concat([train_text, test_text]))
         histogram = word_vectorizer.transform(data)
+        print histogram.shape
         return histogram
     
     def get_word2vec_features(self,data):
@@ -43,7 +46,7 @@ class Extractor:
         split_data=self.preprocessor.split_sentences(data)
         
         '''use these lines to train and save the word2vec model'''
-        print('Creating word2vec vocabulary. You should remove these lines of code if you already did this.)
+        print('Creating word2vec vocabulary. You should remove these lines of code if you already did this.')
         model = Word2Vec(split_data, size=100, window=5, min_count=5, workers=4, hs=1, negative =0)
         model.save(r"..\corpora\toxic.model")
         model.wv.save_word2vec_format(r"..\corpora\toxic.model.bin", binary=True)
@@ -58,9 +61,45 @@ class Extractor:
                     or [np.zeros(dim)], axis=0)
             for sentence in data
                 ])
-        
-        
+   
     
+    def build_word_vectors(self,data,vocab_data):
+        ''' @params - data :list of comments from which to extract features
+            @output - Word2Vec features
+        '''
+        vocab_data=self.preprocessor.get_sentences(vocab_data)
+        data=self.preprocessor.get_sentences(data)
+        model = Word2Vec(min_count=5, hs=1,window=5, negative=5)
+        model.build_vocab(vocab_data)
+        model.train(data, total_examples=data.size, epochs=5) 
+        return model
+
+    def get_word_vector_model(self,data,vocab_data):
+        filename = r"..\corpora\w00v.model"
+        if(os.path.exists(filename)):
+            model = Word2Vec.load(filename)
+        else:
+            model=self.build_word_vectors(data,vocab_data)
+            model.save(filename)
+            #model.wv.save_word2vec_format(filename+".bin", binary=True)
+        print "vocab size-"+str(model.corpus_count)
+        return model
+    
+    def get_word_vectors(self,data,vocab_data):
+        model = self.get_word_vector_model(data, vocab_data)
+        w2v = dict(zip(model.wv.index2word, model.wv.syn0))
+        dim = len(next(iter (w2v.values())))
+        feature_vectors = np.array([
+            np.mean([w2v[w] for w in sentence if w in w2v]
+                    or [np.zeros(dim)], axis=0)
+            for sentence in data
+                ])
+   
+        #feature_vectors = np.array([ np.mean([(model[word]) for word in comment.split() if word in model],axis=0) for comment in data])
+        
+        return feature_vectors
+              
+        
     def num_bad_words(self, data):
         ''' @params - data :list of comments from which to extract features
             @output - list of number of bad words per sentence

@@ -11,22 +11,20 @@ import numpy as np
 import sklearn.model_selection as ms
 from features import Extractor
 from sklearn.linear_model import LogisticRegression
+from sklearn.svm import LinearSVC
 from sklearn.linear_model import SGDClassifier
 from sklearn.pipeline import FeatureUnion
 from sklearn.svm import SVC
 from tqdm import tqdm
 from preprocessor import PreProcessor
 from scipy.sparse import hstack
-from sklearn.utils import shuffle
+from sklearn.utils import shuffle, class_weight
 import matplotlib.pyplot as plt
-from shogun.Features import *
-from shogun.Kernel import *
-from shogun.Classifier import *
-from shogun.Evaluation import *
-from modshogun import StringCharFeatures, RAWBYTE
-from shogun.Kernel import SSKStringKernel
-
-
+#from shogun import *
+#from modshogun import StringCharFeatures, RAWBYTE
+#from shogun.Kernel import SSKStringKernel
+#from libsvm import *
+print '0'
 class Framework:
     
     data=[]
@@ -38,7 +36,7 @@ class Framework:
     def __init__(self):
         self.data = pd.read_csv(self.path);
         self.classes = self.data.keys()[2:]
-        
+        self.preprocessor = PreProcessor()
     
     def generate_dataset(self,data, vocab_data):
         ''' @params - data :dataframe containing list of comments from which to extract features and corresponding classifications
@@ -46,12 +44,14 @@ class Framework:
             @output - dictionary containing features, comment_text and classification targets
         '''
         dataset = {}
-        #word_vectors = self.feature_extractor.get_word_histogram(data['comment_text'],vocab_data['comment_text'])
-        word_vectors = self.feature_extractor.get_word2vec_features(data['comment_text'])
+        vocab = self.preprocessor.clean_all(vocab_data,3)
+        train = self.preprocessor.clean_all(data,3)
+        word_vectors = self.feature_extractor.get_word_vectors(train,vocab)
+        #word_vectors = self.feature_extractor.get_word_histogram(train,vocab)
         #bad_words_vectors=self.feature_extractor.num_bad_words(data['comment_text'])
         #dataset['features'] =  hstack((word_vectors,bad_words_vectors))
         dataset['features'] = word_vectors
-        dataset['comment_text'] = data['comment_text']
+        dataset['comment_text'] = train
         for classname in self.classes:
             dataset[classname] = data[classname]
         return dataset
@@ -60,7 +60,7 @@ class Framework:
         ''' @params - data :dataframe containing list of comments to split into training and test sets
             @output - train and test sets in the form of dictionary containing features, comment_text and classification targets
         '''
-        train_frame,test_frame= ms.train_test_split(data,test_size = 0.2, shuffle=True)
+        train_frame,test_frame= ms.train_test_split(data,test_size = 0.35, shuffle=True)
         train = self.generate_dataset(train_frame,data)
         test = self.generate_dataset(test_frame,data)
         return train,test
@@ -139,15 +139,16 @@ class Framework:
         return output_frame
     
     def plot_bias(self, model, test_data, comment_class):
-        ''' @params - model: trained classifier
-            @params - test_data: test data
+        '''
+            @params - model: trained classifier
+            @params - test_data: test dataframe
             @params - comment_class : class on which to test bias
             @output - dict containing accuracies at different concentrations of clean data and plot
         '''
         accuracies={}
         test_props = np.arange(0.0, 1.0, 0.1)
         for test_prop in test_props:
-                data = self.generate_minibatch(test_data,500,test_prop,comment_class)
+                data = self.generate_minibatch(test_data,100,test_prop,comment_class)
                 dataset = self.generate_dataset(data,self.data)
                 predicted = model.predict(dataset['features'])
                 accuracy = self.get_accuracy(predicted, dataset[comment_class])
@@ -164,7 +165,7 @@ class Test_Suite:
     
     framework = Framework()
     preprocessor=PreProcessor()
-    
+
     def __init__(self):
         self.framework.__init__()
         
@@ -181,17 +182,36 @@ class Test_Suite:
         output = self.framework.get_output(classifier,train,test)
         output.to_csv('output.csv', index=False)
         
+    def balanced_svm(self,dataset, classname):
+        '''
+        Run Linear SVM with extra penalty for False negatives
+
+        '''
+        classifier = LinearSVC(class_weight='balanced',verbose=1)
+        classifier.fit(dataset['features'],dataset[classname])
+        return classifier
+    
     def clean_compare(self):
         ''' Tries out different levels of cleaning and outputs results
         '''
         scores={}
-        for clean_level in tqdm(range(5,-1,-1)):
+        for clean_level in tqdm(range(6,-1,-1)):
             clean_data = self.preprocessor.clean_all(self.framework.data, clean_level)
-            dataset = self.framework.generate_dataset(clean_data, clean_data)
-            classifier = LogisticRegression(solver='sag')
-            scores[str(clean_level)] = self.framework.get_scores(classifier, dataset)
+            
+            classwise_scores={}
+            for classname in self.framework.classes:
+                 train_frame,test_frame= ms.train_test_split(clean_data,test_size = 0.35, shuffle=True,stratify=clean_data[classname])
+                 train_set = self.framework.generate_dataset(train_frame,clean_data)
+       
+                 model = self.balanced_svm(train_set,classname)
+                 test_sample = self.framework.generate_minibatch(test_frame,100,0.5,classname)
+                 test_set = self.framework.generate_dataset(test_sample,clean_data)
+                 predicted = model.predict(test_set['features'])
+                 accuracy = self.framework.get_accuracy(predicted, test_set[classname])
+                 classwise_scores[classname] = accuracy
+            scores[str(clean_level)] = classwise_scores
         scoresframe = pd.DataFrame.from_dict(scores)
-        scoresframe.to_csv('cleaning_comparision.csv', index=False)
+        scoresframe.to_csv('cleaning_comparision.csv')
         return scoresframe
 
        
@@ -211,38 +231,22 @@ class Test_Suite:
         scoresframe.to_csv('classifier_comparision.csv', index=False)
         return scoresframe
     
-    def kernel_compare(self):
-
-        
-
-        ''' Tries out different kernels and outputs results
-
-        '''
-        scores={}
-        clean_data = self.preprocessor.clean_all(self.framework.data, 5)
-        dataset = self.framework.generate_dataset(clean_data,clean_data)
-        classifier = LinearSVC()
-        scores["Linear"] = self.framework.get_scores(classifier,dataset)
-        classifier = SVC(kernel='poly', degree=2)
-        scores["Poly"] = self.framework.get_scores(classifier,dataset)
-        classifier = SVC(kernel = 'rbf')
-        scores["RBF"] = self.framework.get_scores(classifier,dataset)
-        classifier = SVC(kernel = 'sigmoid')
-        scores["Sigmoid"] = self.framework.get_scores(classifier,dataset)
-        scoresframe = pd.DataFrame.from_dict(scores)
-        scoresframe.to_csv('kernel_comparision.csv', index=False)
-        return scoresframe
     
-    def string_kernel(self):
+    
+    '''def string_kernel(self):
         clean_data = self.preprocessor.clean_all(self.framework.data, 5)
         train,test = self.framework.generate_train_test(clean_data)
         #  n=1  0.5=lambda Lodhi 2002
         string_kernel = SSKStringKernel(train['features'], train['features'], 1, 0.5)
         target = BinaryLabels(train['toxic'])
-        classifier = LibSVM(1.0, string_kernels, target)
+        c_weight = class_weight.compute_class_weight('balanced',
+                                                 np.unique(train),
+                                                 train)
+        param = svm_parameter(weight = c_weight)
+        classifier = LibSVM(1.0, string_kernel, target)
         classifier.train()
         predicted = classifier.apply(test['features']).get_labels()
-        print self.framework.get_accuracy(predicted,test['toxic'])
+        print (self.framework.get_accuracy(predicted,test['toxic']))'''
         
         
     def bias_check(self):
@@ -253,8 +257,15 @@ class Test_Suite:
         train = self.framework.generate_dataset(train_frame,self.framework.data)
         classifier.fit(train['features'], train['toxic'])
         self.framework.plot_bias(classifier, test_frame, 'toxic')
+        
+    def run_balanced_svm(self):
+        train_frame,test_frame= ms.train_test_split(self.framework.data,test_size = 0.35, shuffle=True,stratify=self.framework.data['toxic'])
+        train_set = self.framework.generate_dataset(train_frame,self.framework.data)
+        model = self.balanced_svm(train_set,'toxic')
+        self.framework.plot_bias(model,test_frame,'toxic')
 
-
+print '00'
 x=Test_Suite()
-x.run()
+print '000'
+x.run_balanced_svm()
 
