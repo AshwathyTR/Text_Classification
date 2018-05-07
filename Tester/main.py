@@ -44,10 +44,12 @@ class Framework:
             @output - dictionary containing features, comment_text and classification targets
         '''
         dataset = {}
-        vocab = self.preprocessor.clean_all(vocab_data,3)
-        train = self.preprocessor.clean_all(data,3)
-        word_vectors = self.feature_extractor.get_word_vectors(train,vocab)
-        #word_vectors = self.feature_extractor.get_word_histogram(train,vocab)
+        #vocab = self.preprocessor.clean_all(vocab_data,-3)
+        #train = self.preprocessor.clean_all(data,3)
+        vocab = vocab_data['comment_text']
+        train = data['comment_text']
+        #word_vectors = self.feature_extractor.get_word_vectors(train,vocab)
+        word_vectors = self.feature_extractor.get_word_histogram(train,vocab)
         #bad_words_vectors=self.feature_extractor.num_bad_words(data['comment_text'])
         #dataset['features'] =  hstack((word_vectors,bad_words_vectors))
         dataset['features'] = word_vectors
@@ -65,6 +67,10 @@ class Framework:
         test = self.generate_dataset(test_frame,data)
         return train,test
     
+    def get_class_data(self,data,class_name,positive):
+        df = data[data[class_name] == positive]
+        return df
+        
     def generate_minibatch(self,data, chunksize, clean_prop, comment_class):
         ''' @params - data :dataframe from which to generate minibatch
             @params - chunksize: size of mini batch
@@ -158,6 +164,26 @@ class Framework:
         plt.ylabel('accuracy')
         plt.plot(accuracies.keys(),accuracies.values(), 'r^')
         return accuracies
+    
+    def box_plot(self,model,test_data):
+        
+        accuracies=[]
+        for comment_class in self.classes:
+            class_accuracies=[]
+            for run in range(1,5,1):
+                data = self.generate_minibatch(test_data,100,0.5,comment_class)
+                dataset = self.generate_dataset(data,self.data)
+                predicted = model.predict(dataset['features'])
+                accuracy = self.get_accuracy(predicted, dataset[comment_class])
+                class_accuracies.append(accuracy)
+            accuracies.append(class_accuracies)
+            
+        plt.figure(1)
+        plt.xlabel('Class')
+        plt.ylabel('accuracy')
+        plt.boxplot(accuracies)
+        plt.xticks ([1,2,3,4,5,6], self.classes)
+        return accuracies
         
  
 
@@ -172,22 +198,22 @@ class Test_Suite:
     def run(self):
         ''' Main fn: example to show how the framework should be used
         '''
-        self.framework.data=self.preprocessor.clean_all(self.framework.data,6)
+        #self.framework.data=self.preprocessor.clean_all(self.framework.data,6)
         dataset = self.framework.generate_dataset(self.framework.data,self.framework.data)
         classifier = LogisticRegression(solver='sag')
         scores = self.framework.get_scores(classifier, dataset)
         print(scores)
 
-        train,test = self.framework.generate_train_test(self.framework.data)
-        output = self.framework.get_output(classifier,train,test)
-        output.to_csv('output.csv', index=False)
+        #train,test = self.framework.generate_train_test(self.framework.data)
+        #output = self.framework.get_output(classifier,train,test)
+        #output.to_csv('output.csv', index=False)
         
     def balanced_svm(self,dataset, classname):
         '''
         Run Linear SVM with extra penalty for False negatives
 
         '''
-        classifier = LinearSVC(class_weight='balanced',verbose=1)
+        classifier = LinearSVC(class_weight='balanced',verbose=1, max_iter=5000)
         classifier.fit(dataset['features'],dataset[classname])
         return classifier
     
@@ -252,20 +278,33 @@ class Test_Suite:
     def bias_check(self):
         ''' Checks how accuracy varies with varying concentration of clean samples
         '''
-        classifier = LogisticRegression(solver='sag')
-        train_frame,test_frame= ms.train_test_split(self.framework.data,test_size = 0.2, shuffle=True)
-        train = self.framework.generate_dataset(train_frame,self.framework.data)
-        classifier.fit(train['features'], train['toxic'])
-        self.framework.plot_bias(classifier, test_frame, 'toxic')
+        accuracies={}
+        for class_name in self.framework.classes:
+            classifier = LogisticRegression(solver='sag')
+            train_frame,test_frame= ms.train_test_split(self.framework.data,test_size = 0.2, shuffle=True)
+            train = self.framework.generate_dataset(train_frame,self.framework.data)
+            classifier.fit(train['features'], train[class_name])
+            accuracies[class_name] = self.framework.plot_bias(classifier, test_frame, class_name)
+        return accuracies
         
     def run_balanced_svm(self):
-        train_frame,test_frame= ms.train_test_split(self.framework.data,test_size = 0.35, shuffle=True,stratify=self.framework.data['toxic'])
-        train_set = self.framework.generate_dataset(train_frame,self.framework.data)
-        model = self.balanced_svm(train_set,'toxic')
-        self.framework.plot_bias(model,test_frame,'toxic')
+        accuracies ={}
+        for class_name in self.framework.classes:
+            train_frame,test_frame= ms.train_test_split(self.framework.data,test_size = 0.35, shuffle=True,stratify=self.framework.data['toxic'])
+            train_set = self.framework.generate_dataset(train_frame,self.framework.data)
+            model = self.balanced_svm(train_set,class_name)
+            accuracies[class_name] = self.framework.plot_bias(model,test_frame,class_name)        
+        return accuracies
+    
+    
 
-print '00'
+'''print '00'
 x=Test_Suite()
 print '000'
-x.run_balanced_svm()
+print x.run_balanced_svm()'''
+mc = Test_Suite()
+acc={}
+for i in range(1,4,1):
+    acc[i] =  mc.run_balanced_svm()
 
+print acc

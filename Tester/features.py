@@ -9,11 +9,15 @@ import os
 import re
 from preprocessor import PreProcessor
 from sklearn.feature_extraction.text import TfidfVectorizer
-from gensim.models import Word2Vec
+from gensim.models import Word2Vec,KeyedVectors
 from gensim.utils import RULE_KEEP
 import numpy as np
 from tqdm import tqdm
 from scipy.sparse import coo_matrix
+from gensim.test.utils import datapath, get_tmpfile
+from gensim.models import KeyedVectors
+from gensim.scripts.glove2word2vec import glove2word2vec
+
 class Extractor:
     
     path = r"..\corpora\bad-words.txt"
@@ -69,15 +73,23 @@ class Extractor:
         '''
         vocab_data=self.preprocessor.get_sentences(vocab_data)
         data=self.preprocessor.get_sentences(data)
-        model = Word2Vec(min_count=5, hs=1,window=5, negative=5)
+        model = Word2Vec(min_count=1, hs=1,window=5, negative=5)
         model.build_vocab(vocab_data)
         model.train(data, total_examples=data.size, epochs=5) 
         return model
 
+    def load_glove(self):
+        glove_file = datapath(r'C:\Coursework\Advanced ML\repository\Text_Classification\corpora\glove.6B.50d.txt')
+        w2v = get_tmpfile("w2v.txt")
+        glove2word2vec(glove_file, w2v)
+        model = KeyedVectors.load_word2vec_format(w2v)
+        return model
+        
     def get_word_vector_model(self,data,vocab_data):
-        filename = r"..\corpora\w00v.model"
+        filename = r"..\corpora\glove6B.model"
         if(os.path.exists(filename)):
             model = Word2Vec.load(filename)
+    
         else:
             model=self.build_word_vectors(data,vocab_data)
             model.save(filename)
@@ -86,7 +98,8 @@ class Extractor:
         return model
     
     def get_word_vectors(self,data,vocab_data):
-        model = self.get_word_vector_model(data, vocab_data)
+        #model = self.get_word_vector_model(data, vocab_data)
+        model=self.load_glove()
         w2v = dict(zip(model.wv.index2word, model.wv.syn0))
         dim = len(next(iter (w2v.values())))
         feature_vectors = np.array([
