@@ -222,7 +222,7 @@ class Test_Suite:
         '''
         scores={}
         for clean_level in tqdm(range(6,-1,-1)):
-            clean_data=self.frameword.data
+            clean_data=self.framework.data
             clean_data['comment_text'] = self.preprocessor.clean_all(self.framework.data, clean_level)
             
             classwise_scores={}
