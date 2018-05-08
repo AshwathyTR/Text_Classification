@@ -217,12 +217,13 @@ class Test_Suite:
         classifier.fit(dataset['features'],dataset[classname])
         return classifier
     
-    def clean_compare(self):
+    def clean_compare(self,i):
         ''' Tries out different levels of cleaning and outputs results
         '''
         scores={}
         for clean_level in tqdm(range(6,-1,-1)):
-            clean_data = self.preprocessor.clean_all(self.framework.data, clean_level)
+            clean_data=self.frameword.data
+            clean_data['comment_text'] = self.preprocessor.clean_all(self.framework.data, clean_level)
             
             classwise_scores={}
             for classname in self.framework.classes:
@@ -237,24 +238,22 @@ class Test_Suite:
                  classwise_scores[classname] = accuracy
             scores[str(clean_level)] = classwise_scores
         scoresframe = pd.DataFrame.from_dict(scores)
-        scoresframe.to_csv('cleaning_comparision.csv')
+        scoresframe.to_csv('cleaning_comparision'+str(i)+'.csv')
         return scoresframe
 
        
-    def classifier_compare(self):
+    def classifier_compare(self,i):
         ''' Tries out different classifiers and outputs results
         '''
         scores={}
-        clean_data = self.preprocessor.clean_all(self.framework.data, 5)
-        dataset = self.framework.generate_dataset(clean_data,clean_data)
+        #clean_data = self.preprocessor.clean_all(self.framework.data, 5)
+        dataset = self.framework.generate_dataset(self.framework.data,self.framework.data)
         classifier = LogisticRegression(solver='sag')
         scores["LR"] = self.framework.get_scores(classifier,dataset)
-        classifier = SGDClassifier()
-        scores["SGD"] = self.framework.get_scores(classifier,dataset)
-        classifier = SVC()
+        classifier = LinearSVC(verbose=1)
         scores["SVC"] = self.framework.get_scores(classifier,dataset)
         scoresframe = pd.DataFrame.from_dict(scores)
-        scoresframe.to_csv('classifier_comparision.csv', index=False)
+        scoresframe.to_csv('classifier_comparision'+str(i)+'.csv', index=False)
         return scoresframe
     
     
@@ -279,9 +278,11 @@ class Test_Suite:
         ''' Checks how accuracy varies with varying concentration of clean samples
         '''
         accuracies={}
+        clean_data=self.framework.data
+        clean_data['comment_text'] = self.preprocessor.clean_all(self.framework.data, 5)
         for class_name in self.framework.classes:
-            classifier = LogisticRegression(solver='sag')
-            train_frame,test_frame= ms.train_test_split(self.framework.data,test_size = 0.2, shuffle=True)
+            classifier = LinearSVC(verbose=1)
+            train_frame,test_frame= ms.train_test_split(clean_data,test_size = 0.35, shuffle=True)
             train = self.framework.generate_dataset(train_frame,self.framework.data)
             classifier.fit(train['features'], train[class_name])
             accuracies[class_name] = self.framework.plot_bias(classifier, test_frame, class_name)
@@ -304,7 +305,7 @@ print '000'
 print x.run_balanced_svm()'''
 mc = Test_Suite()
 acc={}
-for i in range(1,4,1):
-    acc[i] =  mc.run_balanced_svm()
+for i in range(1,6,1):
+    acc[i] =  mc.clean_compare(i)
 
 print acc
