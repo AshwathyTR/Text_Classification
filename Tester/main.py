@@ -20,6 +20,7 @@ from preprocessor import PreProcessor
 from scipy.sparse import hstack
 from sklearn.utils import shuffle, class_weight
 import matplotlib.pyplot as plt
+from sklearn.kernel_approximation import RBFSampler
 #from shogun import *
 #from modshogun import StringCharFeatures, RAWBYTE
 #from shogun.Kernel import SSKStringKernel
@@ -48,11 +49,12 @@ class Framework:
         #train = self.preprocessor.clean_all(data,3)
         vocab = vocab_data['comment_text']
         train = data['comment_text']
-        #word_vectors = self.feature_extractor.get_word_vectors(train,vocab)
-        word_vectors = self.feature_extractor.get_word_histogram(train,vocab)
+        word_vectors = self.feature_extractor.get_word_vectors(train,vocab)
+        #word_vectors = self.feature_extractor.get_word_histogram(train,vocab)
         #bad_words_vectors=self.feature_extractor.num_bad_words(data['comment_text'])
         #dataset['features'] =  hstack((word_vectors,bad_words_vectors))
         dataset['features'] = word_vectors
+        
         dataset['comment_text'] = train
         for classname in self.classes:
             dataset[classname] = data[classname]
@@ -153,10 +155,13 @@ class Framework:
         '''
         accuracies={}
         test_props = np.arange(0.0, 1.0, 0.1)
+        rbf_feature = RBFSampler()
         for test_prop in test_props:
                 data = self.generate_minibatch(test_data,100,test_prop,comment_class)
                 dataset = self.generate_dataset(data,self.data)
-                predicted = model.predict(dataset['features'])
+                x_chunk=dataset['features']
+                X_features = rbf_feature.fit_transform(x_chunk)
+                predicted = model.predict(X_features)
                 accuracy = self.get_accuracy(predicted, dataset[comment_class])
                 accuracies[test_prop] = accuracy
         plt.figure(1)
@@ -279,7 +284,7 @@ class Test_Suite:
         '''
         accuracies={}
         clean_data=self.framework.data
-        clean_data['comment_text'] = self.preprocessor.clean_all(self.framework.data, 5)
+        #clean_data['comment_text'] = self.preprocessor.clean_all(self.framework.data, 5)
         for class_name in self.framework.classes:
             classifier = LinearSVC(verbose=1)
             train_frame,test_frame= ms.train_test_split(clean_data,test_size = 0.35, shuffle=True)
@@ -297,15 +302,13 @@ class Test_Suite:
             accuracies[class_name] = self.framework.plot_bias(model,test_frame,class_name)        
         return accuracies
     
+      
+    
     
 
-'''print '00'
-x=Test_Suite()
-print '000'
-print x.run_balanced_svm()'''
-mc = Test_Suite()
+'''mc = Test_Suite()
 acc={}
 for i in range(1,6,1):
-    acc[i] =  mc.clean_compare(i)
+    acc[i] = mc.run_balanced_svm()
 
-print acc
+print acc'''

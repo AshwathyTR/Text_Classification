@@ -98,8 +98,8 @@ class Extractor:
         return model
     
     def get_word_vectors(self,data,vocab_data):
-        #model = self.get_word_vector_model(data, vocab_data)
-        model=self.load_glove()
+        model = self.get_word_vector_model(data, vocab_data)
+        #model=self.load_glove()
         w2v = dict(zip(model.wv.index2word, model.wv.syn0))
         dim = len(next(iter (w2v.values())))
         feature_vectors = np.array([

@@ -22,7 +22,7 @@ from sklearn.cross_validation import KFold
 import xgboost as xgb
 from features import Extractor
 import matplotlib.pyplot as plt
-
+from sklearn.kernel_approximation import RBFSampler
 
 
 class Modified_Classifiers:
@@ -48,6 +48,27 @@ class Modified_Classifiers:
             accuracies[comment_class] = self.f.plot_bias(model, test_frame,comment_class)
         return accuracies
     
+    def minibatch_RBF(self):
+        
+        train_frame,test_frame= ms.train_test_split(self.f.data,test_size = 0.35, shuffle=True)
+        accuracies={}
+        rbf_feature = RBFSampler()
+                
+        for comment_class in self.f.classes:
+            model = SGDClassifier(loss='hinge')
+            for i in tqdm(range(0,50,1)):
+                batch = self.f.generate_minibatch(train_frame,250,0.5,comment_class)
+                dataset = self.f.generate_dataset(batch,self.f.data)
+                x_chunk=dataset['features']
+                y_chunk = dataset[comment_class]
+                X_features = rbf_feature.fit_transform(x_chunk)
+                model.partial_fit(X_features, y_chunk,classes=np.unique(y_chunk))
+               #for comment_class in self.f.classes:
+            accuracies[comment_class] = self.f.plot_bias(model, test_frame,comment_class)
+        return accuracies
+    
+   
+
     def w2v_predict(self,pos,neg, data):
         predictions=[]
         for entry in data:
@@ -91,7 +112,12 @@ class Modified_Classifiers:
              
              
              
-c
+'''c = Modified_Classifiers()
+acc={}
+for i in range(1,2,1):
+    acc[i] =  c.minibatch_RBF()
+print acc'''
+
    
             
             
